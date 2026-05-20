@@ -459,7 +459,7 @@ async function continueReading() {
 
 // ─── LOADING & TOAST ─────────────────────────────────────────
 function showLoading(visible) {
-  document.getElementById('loadingOverlay').classList.toggle('hidden', !visible);
+  document.getElementById('loadingOverlay').classList.toggle('visible', visible);
 }
 
 function showToast(msg, type = 'success') {
