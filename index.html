@@ -72,11 +72,13 @@
       transition: background .2s, color .2s;
     }
 
-    /* Custom scrollbar */
+    /* Custom scrollbar — Webkit (Chrome, Safari, Edge) */
     ::-webkit-scrollbar       { width: 6px; height: 6px; }
     ::-webkit-scrollbar-track { background: var(--bg2); }
     ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
     ::-webkit-scrollbar-thumb:hover { background: var(--muted); }
+    /* Firefox */
+    * { scrollbar-width: thin; scrollbar-color: var(--border) var(--bg2); }
 
     /* ═══════════════════════════════════════════════════
        HEADER
@@ -366,12 +368,12 @@
        LOADING & TOAST
        ═══════════════════════════════════════════════════ */
     #loadingOverlay {
+      display: none;           /* hidden by default */
       position: fixed; inset: 0;
       background: var(--overlay);
       z-index: 500; align-items: center; justify-content: center;
     }
-    /* display is controlled via style.display in JS, not the hidden class,
-       to avoid ID-vs-class specificity conflicts with Tailwind */
+    /* .visible has higher specificity (0-1-1-0) than base rule (0-1-0-0) */
     #loadingOverlay.visible { display: flex; }
     .spinner {
       width: 40px; height: 40px;
