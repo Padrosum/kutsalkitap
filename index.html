@@ -1,0 +1,530 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="Read the King James Version Bible — offline-capable, notes, search, and progress tracking." />
+  <title>Bible KJV Reader</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>tailwind.config = { darkMode: 'class' };</script>
+
+  <style>
+    /* ═══════════════════════════════════════════════════
+       THEME VARIABLES
+       ═══════════════════════════════════════════════════ */
+    :root {
+      --bg:            #f8f1e3;   /* parchment */
+      --bg2:           #f0e6ce;   /* slightly darker parchment */
+      --bg3:           #fffcf5;   /* elevated surfaces (cards, modals) */
+      --overlay:       rgba(30, 20, 10, 0.50);
+      --txt:           #2c1810;
+      --txt2:          #6b5744;
+      --muted:         #9c8070;
+      --border:        #ddd3c0;
+      --accent:        #7c4d2a;
+      --accent2:       #5e3719;
+      --vnum:          #c0392b;   /* verse number red */
+      --hbg:           #2c1810;   /* header bg */
+      --htxt:          #f8f1e3;   /* header text */
+      --pill:          #e8dcc8;
+      --pill-border:   #c4b49a;
+      --pill-cur-bg:   #7c4d2a;
+      --pill-cur-txt:  #fff;
+      --pill-read-bg:  #c9b99a;
+      --pill-read-txt: #4a3520;
+    }
+    .dark {
+      --bg:            #1a1410;
+      --bg2:           #221c16;
+      --bg3:           #2a221a;
+      --overlay:       rgba(0, 0, 0, 0.70);
+      --txt:           #e8d9c5;
+      --txt2:          #b8a892;
+      --muted:         #7a6a58;
+      --border:        #3a2e22;
+      --accent:        #c48a55;
+      --accent2:       #d4a070;
+      --vnum:          #e05555;
+      --hbg:           #0f0c09;
+      --htxt:          #e8d9c5;
+      --pill:          #2e2318;
+      --pill-border:   #4a3520;
+      --pill-cur-bg:   #c48a55;
+      --pill-cur-txt:  #1a1410;
+      --pill-read-bg:  #3d3020;
+      --pill-read-txt: #c8b090;
+    }
+
+    /* ═══════════════════════════════════════════════════
+       BASE
+       ═══════════════════════════════════════════════════ */
+    *, *::before, *::after { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--txt);
+      font-family: 'Inter', system-ui, sans-serif;
+      min-height: 100vh;
+      transition: background .2s, color .2s;
+    }
+
+    /* Custom scrollbar */
+    ::-webkit-scrollbar       { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: var(--bg2); }
+    ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+    ::-webkit-scrollbar-thumb:hover { background: var(--muted); }
+
+    /* ═══════════════════════════════════════════════════
+       HEADER
+       ═══════════════════════════════════════════════════ */
+    #appHeader {
+      background: var(--hbg);
+      color: var(--htxt);
+      position: sticky; top: 0; z-index: 100;
+      box-shadow: 0 2px 10px rgba(0,0,0,.35);
+    }
+    .header-inner {
+      max-width: 900px;
+      margin: 0 auto;
+      padding: 8px 14px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      flex-wrap: wrap;
+    }
+    .app-title {
+      font-size: 1.05rem; font-weight: 700; letter-spacing: -.01em;
+      color: var(--htxt); white-space: nowrap; user-select: none;
+      margin-right: 4px;
+    }
+    .spacer { flex: 1; }
+
+    /* generic header button */
+    .hbtn {
+      background: rgba(255,255,255,.10);
+      border: 1px solid rgba(255,255,255,.20);
+      color: var(--htxt);
+      border-radius: 6px;
+      padding: 5px 9px;
+      font-size: .8rem; font-weight: 500;
+      cursor: pointer;
+      display: inline-flex; align-items: center; gap: 4px;
+      white-space: nowrap;
+      transition: background .15s;
+    }
+    .hbtn:hover { background: rgba(255,255,255,.18); }
+    .hbtn.primary { background: var(--accent); border-color: var(--accent); }
+    .hbtn.primary:hover { background: var(--accent2); border-color: var(--accent2); }
+    .font-family-btn {
+      background: rgba(255,255,255,.10);
+      border: 1px solid rgba(255,255,255,.20);
+      color: var(--htxt);
+      border-radius: 5px;
+      padding: 4px 7px;
+      font-size: .75rem; cursor: pointer;
+      transition: background .12s;
+    }
+    .font-family-btn:hover,
+    .font-family-btn.active { background: var(--accent); border-color: var(--accent); }
+    #fontSizeDisplay { font-size: .72rem; opacity: .7; min-width: 28px; text-align: center; }
+
+    /* ═══════════════════════════════════════════════════
+       MAIN CONTENT
+       ═══════════════════════════════════════════════════ */
+    #mainContent {
+      max-width: 900px;
+      margin: 0 auto;
+      padding: 14px 14px 60px;
+    }
+
+    /* ─── Search Panel ─── */
+    #searchPanel {
+      background: var(--bg3);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 12px 14px;
+      margin-bottom: 12px;
+    }
+    .search-row { display: flex; gap: 8px; margin-bottom: 10px; }
+    .search-input {
+      flex: 1;
+      padding: 7px 11px;
+      border-radius: 7px; border: 1px solid var(--border);
+      background: var(--bg); color: var(--txt);
+      font-size: .88rem; outline: none;
+    }
+    .search-input:focus { border-color: var(--accent); }
+    .search-scope {
+      padding: 7px 9px;
+      border-radius: 7px; border: 1px solid var(--border);
+      background: var(--bg2); color: var(--txt);
+      font-size: .8rem; cursor: pointer; outline: none;
+    }
+    .results-count { font-size: .72rem; color: var(--muted); margin-bottom: 6px; }
+    .result-list { max-height: 260px; overflow-y: auto; }
+    .result-item {
+      padding: 7px 9px; border-radius: 6px; cursor: pointer;
+      margin-bottom: 3px; background: var(--bg2);
+      transition: background .12s;
+    }
+    .result-item:hover { background: var(--border); }
+    .result-ref  { display: block; font-size: .72rem; font-weight: 700; color: var(--accent); margin-bottom: 2px; }
+    .result-text { font-size: .83rem; color: var(--txt2); line-height: 1.4; }
+    .result-text mark, .verse-text mark {
+      background: rgba(250,204,21,.40);
+      border-radius: 2px; padding: 0 1px;
+    }
+    .dark .result-text mark,
+    .dark .verse-text mark { background: rgba(250,204,21,.28); }
+    .empty-msg { font-size: .83rem; color: var(--muted); padding: 8px 0; }
+
+    /* ─── Chapter Nav ─── */
+    #chapterNav {
+      background: var(--bg3);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 12px 14px;
+      margin-bottom: 12px;
+    }
+    .chapter-nav-top {
+      display: flex; align-items: center; gap: 8px; margin-bottom: 10px;
+    }
+    .nav-btn {
+      background: var(--pill); border: 1px solid var(--pill-border);
+      color: var(--txt); border-radius: 6px; padding: 5px 12px;
+      font-size: .9rem; cursor: pointer; transition: background .12s;
+      flex-shrink: 0;
+    }
+    .nav-btn:hover:not([disabled]) { background: var(--border); }
+    .nav-btn[disabled]             { opacity: .35; cursor: not-allowed; }
+    .chapter-title {
+      flex: 1; text-align: center; font-size: 1.05rem; font-weight: 600;
+      color: var(--txt);
+    }
+    .chapter-total { font-size: .8em; color: var(--muted); font-weight: 400; }
+    .chapter-pills { display: flex; flex-wrap: wrap; gap: 5px; }
+    .chapter-pill {
+      background: var(--pill); border: 1px solid var(--pill-border);
+      color: var(--txt2); border-radius: 5px; padding: 3px 7px;
+      font-size: .76rem; cursor: pointer; transition: all .12s;
+    }
+    .chapter-pill:hover             { background: var(--border); }
+    .chapter-pill.current           { background: var(--pill-cur-bg); color: var(--pill-cur-txt); border-color: var(--pill-cur-bg); font-weight: 600; }
+    .chapter-pill.read              { background: var(--pill-read-bg); color: var(--pill-read-txt); }
+
+    /* ─── Progress Bar ─── */
+    #progressContainer { margin-bottom: 14px; }
+    .progress-wrap    { display: flex; align-items: center; gap: 10px; }
+    .progress-track   { flex: 1; height: 5px; background: var(--border); border-radius: 3px; overflow: hidden; }
+    .progress-fill    { height: 100%; background: var(--accent); border-radius: 3px; transition: width .4s ease; }
+    .progress-label   { font-size: .72rem; color: var(--muted); white-space: nowrap; }
+
+    /* ─── Verses ─── */
+    #versesContainer { font-size: 17px; line-height: 1.78; }
+    .verse-row {
+      display: flex; align-items: baseline; gap: 8px;
+      padding: 5px 9px; border-radius: 6px; margin-bottom: 2px;
+      position: relative; transition: background-color .15s;
+    }
+    .verse-row:hover { background-color: var(--bg2) !important; }
+    .verse-row.search-match { outline: 2px solid var(--accent); outline-offset: -2px; }
+    .verse-num {
+      color: var(--vnum); font-weight: 700; font-size: .76em;
+      min-width: 20px; flex-shrink: 0; cursor: pointer; user-select: none;
+      margin-top: 4px; line-height: 1;
+    }
+    .verse-num:hover { text-decoration: underline; }
+    .verse-text { flex: 1; }
+    .copy-btn {
+      opacity: 0; transition: opacity .15s;
+      background: none; border: none; cursor: pointer;
+      color: var(--muted); padding: 2px 4px; border-radius: 4px;
+      flex-shrink: 0; display: inline-flex; align-items: center;
+    }
+    .copy-btn:hover      { color: var(--accent); background: var(--bg2); }
+    .verse-row:hover .copy-btn { opacity: 1; }
+    .note-dot {
+      width: 7px; height: 7px; border-radius: 50%;
+      flex-shrink: 0; margin-left: 2px; margin-bottom: 1px;
+      align-self: center;
+    }
+
+    /* ─── Bottom Nav ─── */
+    .bottom-nav {
+      display: flex; justify-content: space-between; align-items: center;
+      margin-top: 24px; padding-top: 16px;
+      border-top: 1px solid var(--border);
+    }
+    .bottom-nav-btn {
+      background: var(--pill); border: 1px solid var(--pill-border);
+      color: var(--txt2); border-radius: 8px; padding: 8px 18px;
+      font-size: .85rem; font-weight: 500; cursor: pointer;
+      transition: all .12s;
+    }
+    .bottom-nav-btn:hover:not([disabled]) { background: var(--accent); color: #fff; border-color: var(--accent); }
+    .bottom-nav-btn[disabled]             { opacity: .35; cursor: not-allowed; }
+
+    /* ═══════════════════════════════════════════════════
+       MODALS
+       ═══════════════════════════════════════════════════ */
+    .modal-overlay {
+      position: fixed; inset: 0;
+      background: var(--overlay);
+      z-index: 200;
+      display: flex; align-items: flex-start; justify-content: center;
+      padding: 20px 12px;
+      overflow-y: auto;
+    }
+    .modal-box {
+      background: var(--bg3);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      width: 100%; max-width: 600px;
+      max-height: 88vh;
+      display: flex; flex-direction: column;
+      box-shadow: 0 24px 64px rgba(0,0,0,.30);
+    }
+    .modal-head {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 14px 18px 12px;
+      border-bottom: 1px solid var(--border);
+      flex-shrink: 0;
+    }
+    .modal-title { font-size: 1.05rem; font-weight: 700; color: var(--txt); }
+    .modal-close {
+      background: none; border: none; font-size: 1.4rem; line-height: 1;
+      cursor: pointer; color: var(--muted); padding: 2px 6px; border-radius: 4px;
+    }
+    .modal-close:hover { background: var(--bg2); color: var(--txt); }
+    .modal-body { padding: 14px 18px; overflow-y: auto; flex: 1; }
+
+    /* Book list */
+    .book-search { width: 100%; padding: 8px 11px; border-radius: 8px; border: 1px solid var(--border);
+      background: var(--bg); color: var(--txt); font-size: .88rem; outline: none; margin-bottom: 12px; }
+    .book-search:focus { border-color: var(--accent); }
+    .testament-tabs { display: flex; gap: 5px; margin-bottom: 12px; }
+    .testament-tab {
+      flex: 1; padding: 6px; border-radius: 7px; border: 1px solid var(--border);
+      background: var(--bg2); color: var(--txt2);
+      font-size: .82rem; font-weight: 500; cursor: pointer; transition: all .12s;
+    }
+    .testament-tab.active, .testament-tab:hover { background: var(--accent); color: #fff; border-color: var(--accent); }
+    .book-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(128px, 1fr)); gap: 6px; }
+    .book-item {
+      background: var(--bg2); border: 1px solid var(--border); border-radius: 7px;
+      padding: 8px 10px; text-align: left; cursor: pointer; position: relative;
+      transition: all .12s;
+    }
+    .book-item:hover, .book-item.current { background: var(--accent); border-color: var(--accent); }
+    .book-abbr  { display: block; font-size: .68rem; font-weight: 700; opacity: .6; text-transform: uppercase; letter-spacing: .06em; color: var(--txt2); }
+    .book-item:hover .book-abbr, .book-item.current .book-abbr { opacity: .8; color: #fff; }
+    .book-name  { display: block; font-size: .83rem; font-weight: 500; color: var(--txt); line-height: 1.25; margin-top: 1px; }
+    .book-item:hover .book-name, .book-item.current .book-name { color: #fff; }
+    .book-pct   { position: absolute; top: 6px; right: 7px; font-size: .65rem; font-weight: 600; color: var(--accent); }
+    .book-item:hover .book-pct, .book-item.current .book-pct { color: rgba(255,255,255,.85); }
+
+    /* Note modal */
+    .note-modal { max-width: 440px; }
+    .note-ref   { font-size: .83rem; font-weight: 600; color: var(--accent); padding: 12px 18px 0; }
+    .note-body  { padding: 10px 18px 18px; }
+    .note-ta {
+      width: 100%; min-height: 96px; padding: 9px 11px;
+      border-radius: 8px; border: 1px solid var(--border);
+      background: var(--bg); color: var(--txt);
+      font-size: .88rem; font-family: inherit; resize: vertical; outline: none;
+      margin: 10px 0;
+    }
+    .note-ta:focus { border-color: var(--accent); }
+    .color-row   { display: flex; align-items: center; gap: 8px; margin-bottom: 14px; }
+    .color-label { font-size: .76rem; color: var(--muted); }
+    .color-opt {
+      width: 24px; height: 24px; border-radius: 50%; cursor: pointer;
+      border: 3px solid transparent; flex-shrink: 0;
+      transition: transform .12s, border-color .12s;
+    }
+    .color-opt:hover  { transform: scale(1.2); }
+    .color-opt.selected { border-color: var(--txt); transform: scale(1.1); }
+    .note-actions { display: flex; gap: 7px; justify-content: flex-end; }
+    .btn {
+      padding: 7px 15px; border-radius: 7px; font-size: .83rem; font-weight: 500;
+      cursor: pointer; border: 1px solid var(--border);
+      display: inline-flex; align-items: center; gap: 4px;
+      transition: all .12s;
+    }
+    .btn-ghost   { background: var(--bg2);  color: var(--txt2); }
+    .btn-ghost:hover { background: var(--border); }
+    .btn-primary { background: var(--accent); color: #fff; border-color: var(--accent); }
+    .btn-primary:hover { background: var(--accent2); border-color: var(--accent2); }
+    .btn-danger  { background: #dc2626; color: #fff; border-color: #dc2626; }
+    .btn-danger:hover { background: #b91c1c; }
+
+    /* ═══════════════════════════════════════════════════
+       LOADING & TOAST
+       ═══════════════════════════════════════════════════ */
+    #loadingOverlay {
+      position: fixed; inset: 0;
+      background: var(--overlay);
+      z-index: 500; display: flex; align-items: center; justify-content: center;
+    }
+    .spinner {
+      width: 40px; height: 40px;
+      border: 3px solid var(--border); border-top-color: var(--accent);
+      border-radius: 50%; animation: spin .7s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .toast {
+      position: fixed; bottom: 22px; left: 50%;
+      transform: translateX(-50%) translateY(70px);
+      background: var(--txt); color: var(--bg);
+      padding: 9px 18px; border-radius: 8px;
+      font-size: .84rem; font-weight: 500;
+      z-index: 999; opacity: 0; pointer-events: none;
+      transition: transform .22s, opacity .22s;
+      white-space: nowrap;
+    }
+    .toast.show  { transform: translateX(-50%) translateY(0); opacity: 1; }
+    .toast.error { background: #dc2626; color: #fff; }
+
+    /* ═══════════════════════════════════════════════════
+       RESPONSIVE
+       ═══════════════════════════════════════════════════ */
+    @media (max-width: 600px) {
+      .header-inner { gap: 4px; }
+      .app-title    { font-size: .9rem; }
+      .hbtn         { padding: 4px 7px; font-size: .74rem; }
+      #mainContent  { padding: 10px 10px 50px; }
+      .book-grid    { grid-template-columns: repeat(auto-fill, minmax(108px, 1fr)); }
+      .modal-box    { max-height: 95vh; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ═══ LOADING OVERLAY ══════════════════════════════════════ -->
+<div id="loadingOverlay" class="hidden">
+  <div class="spinner"></div>
+</div>
+
+<!-- ═══ HEADER ═══════════════════════════════════════════════ -->
+<header id="appHeader">
+  <div class="header-inner">
+    <span class="app-title">&#x1F4D6; Bible KJV</span>
+
+    <!-- Continue reading -->
+    <button id="continueBtn" class="hbtn hidden" onclick="continueReading()">
+      &#9654; <span class="continue-label"></span>
+    </button>
+
+    <span class="spacer"></span>
+
+    <!-- Search -->
+    <button id="searchToggleBtn" class="hbtn" onclick="toggleSearch()"></button>
+
+    <!-- Font size -->
+    <button class="hbtn" onclick="changeFontSize(-1)" title="Decrease font size (Alt+−)">A−</button>
+    <span id="fontSizeDisplay">17px</span>
+    <button class="hbtn" onclick="changeFontSize(1)"  title="Increase font size (Alt++)">A+</button>
+
+    <!-- Font family -->
+    <button class="font-family-btn active" data-family="inter"   onclick="setFontFamily('inter')"   title="Sans-serif">Sans</button>
+    <button class="font-family-btn"        data-family="georgia" onclick="setFontFamily('georgia')" title="Georgia">Serif</button>
+    <button class="font-family-btn"        data-family="serif"   onclick="setFontFamily('serif')"   title="Palatino">Palat.</button>
+
+    <!-- Dark mode -->
+    <button id="themeToggleBtn" class="hbtn" onclick="toggleDarkMode()" title="Toggle dark mode"></button>
+
+    <!-- Book select -->
+    <button id="bookSelectBtn" class="hbtn primary" onclick="openBookModal()"></button>
+  </div>
+</header>
+
+<!-- ═══ MAIN ═════════════════════════════════════════════════ -->
+<main id="mainContent">
+
+  <!-- Search panel -->
+  <div id="searchPanel" class="hidden">
+    <div class="search-row">
+      <input id="searchInput" type="search" placeholder="Search verses…" class="search-input" />
+      <select id="searchScope" class="search-scope">
+        <option value="chapter">This chapter</option>
+        <option value="book">This book</option>
+      </select>
+    </div>
+    <div id="searchResults"></div>
+  </div>
+
+  <!-- Chapter navigation -->
+  <div id="chapterNav"></div>
+
+  <!-- Reading progress -->
+  <div id="progressContainer"></div>
+
+  <!-- Verse list -->
+  <div id="versesContainer"></div>
+
+  <!-- Bottom navigation -->
+  <div class="bottom-nav">
+    <button class="bottom-nav-btn" onclick="prevChapter()" id="prevBtn">&#8592; Previous</button>
+    <button class="bottom-nav-btn" onclick="nextChapter()" id="nextBtn">Next &#8594;</button>
+  </div>
+
+</main>
+
+<!-- ═══ BOOK SELECTION MODAL ═════════════════════════════════ -->
+<div id="bookModal" class="modal-overlay hidden" role="dialog" aria-modal="true" aria-label="Select a book of the Bible">
+  <div class="modal-box">
+    <div class="modal-head">
+      <span class="modal-title">Select Book</span>
+      <button class="modal-close" onclick="closeBookModal()" aria-label="Close">&times;</button>
+    </div>
+    <div class="modal-body">
+      <input id="bookSearchInput" type="search" placeholder="Search books…" class="book-search" />
+      <div class="testament-tabs">
+        <button class="testament-tab active" data-testament="OT">Old Testament</button>
+        <button class="testament-tab"        data-testament="NT">New Testament</button>
+        <button class="testament-tab"        data-testament="ALL">All 66</button>
+      </div>
+      <div id="bookListContainer"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ NOTE MODAL ════════════════════════════════════════════ -->
+<div id="noteModal" class="modal-overlay hidden" role="dialog" aria-modal="true" aria-label="Add or edit note">
+  <div class="modal-box note-modal">
+    <div class="modal-head">
+      <span class="modal-title">Note</span>
+      <button class="modal-close" onclick="closeNoteModal()" aria-label="Close">&times;</button>
+    </div>
+    <div id="noteRef" class="note-ref"></div>
+    <div class="note-body">
+      <textarea id="noteText" class="note-ta"
+        placeholder="Write your note… (leave empty for colour highlight only)"></textarea>
+      <div class="color-row">
+        <span class="color-label">Colour:</span>
+        <button class="color-opt"          data-color="blue"   style="background:#3b82f6" aria-label="Blue"   title="Blue"></button>
+        <button class="color-opt"          data-color="green"  style="background:#22c55e" aria-label="Green"  title="Green"></button>
+        <button class="color-opt selected" data-color="yellow" style="background:#eab308" aria-label="Yellow" title="Yellow"></button>
+        <button class="color-opt"          data-color="red"    style="background:#ef4444" aria-label="Red"    title="Red"></button>
+        <button class="color-opt"          data-color="purple" style="background:#a855f7" aria-label="Purple" title="Purple"></button>
+      </div>
+      <div class="note-actions">
+        <button id="noteDeleteBtn" class="btn btn-danger"  onclick="deleteNote()" style="display:none">Delete</button>
+        <button class="btn btn-ghost"   onclick="closeNoteModal()">Cancel</button>
+        <button class="btn btn-primary" onclick="saveNote()">Save Note</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ TOAST ════════════════════════════════════════════════ -->
+<div id="toast" class="toast" role="alert" aria-live="polite"></div>
+
+<script src="script.js"></script>
+</body>
+</html>
