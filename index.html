@@ -427,6 +427,9 @@
 
     <span class="spacer"></span>
 
+    <!-- Mode toggle -->
+    <button id="modeToggleBtn" class="hbtn" onclick="switchMode()">☪ Kur'an</button>
+
     <!-- Search -->
     <button id="searchToggleBtn" class="hbtn" onclick="toggleSearch()"></button>
 
@@ -454,10 +457,10 @@
   <!-- Search panel -->
   <div id="searchPanel" class="hidden">
     <div class="search-row">
-      <input id="searchInput" type="search" placeholder="Search verses…" class="search-input" />
+      <input id="searchInput" type="search" placeholder="Ayet ara…" class="search-input" />
       <select id="searchScope" class="search-scope">
-        <option value="chapter">This chapter</option>
-        <option value="book">This book</option>
+        <option value="chapter">Bu bölüm</option>
+        <option value="book">Bu kitap</option>
       </select>
     </div>
     <div id="searchResults"></div>
@@ -474,8 +477,8 @@
 
   <!-- Bottom navigation -->
   <div class="bottom-nav">
-    <button class="bottom-nav-btn" onclick="prevChapter()" id="prevBtn">&#8592; Previous</button>
-    <button class="bottom-nav-btn" onclick="nextChapter()" id="nextBtn">Next &#8594;</button>
+    <button class="bottom-nav-btn" onclick="prevChapter()" id="prevBtn">&#8592; Önceki</button>
+    <button class="bottom-nav-btn" onclick="nextChapter()" id="nextBtn">Sonraki &#8594;</button>
   </div>
 
 </main>
@@ -488,11 +491,11 @@
       <button class="modal-close" onclick="closeBookModal()" aria-label="Close">&times;</button>
     </div>
     <div class="modal-body">
-      <input id="bookSearchInput" type="search" placeholder="Search books…" class="book-search" />
+      <input id="bookSearchInput" type="search" placeholder="Kitap ara…" class="book-search" />
       <div class="testament-tabs">
-        <button class="testament-tab active" data-testament="OT">Old Testament</button>
-        <button class="testament-tab"        data-testament="NT">New Testament</button>
-        <button class="testament-tab"        data-testament="ALL">All 66</button>
+        <button class="testament-tab active" data-testament="OT">Eski Ahit</button>
+        <button class="testament-tab"        data-testament="NT">Yeni Ahit</button>
+        <button class="testament-tab"        data-testament="ALL">Tümü (66)</button>
       </div>
       <div id="bookListContainer"></div>
     </div>
@@ -509,9 +512,9 @@
     <div id="noteRef" class="note-ref"></div>
     <div class="note-body">
       <textarea id="noteText" class="note-ta"
-        placeholder="Write your note… (leave empty for colour highlight only)"></textarea>
+        placeholder="Notunuzu yazın… (sadece renk vurgusu için boş bırakın)"></textarea>
       <div class="color-row">
-        <span class="color-label">Colour:</span>
+        <span class="color-label">Renk:</span>
         <button class="color-opt"          data-color="blue"   style="background:#3b82f6" aria-label="Blue"   title="Blue"></button>
         <button class="color-opt"          data-color="green"  style="background:#22c55e" aria-label="Green"  title="Green"></button>
         <button class="color-opt selected" data-color="yellow" style="background:#eab308" aria-label="Yellow" title="Yellow"></button>
@@ -519,9 +522,9 @@
         <button class="color-opt"          data-color="purple" style="background:#a855f7" aria-label="Purple" title="Purple"></button>
       </div>
       <div class="note-actions">
-        <button id="noteDeleteBtn" class="btn btn-danger"  onclick="deleteNote()" style="display:none">Delete</button>
-        <button class="btn btn-ghost"   onclick="closeNoteModal()">Cancel</button>
-        <button class="btn btn-primary" onclick="saveNote()">Save Note</button>
+        <button id="noteDeleteBtn" class="btn btn-danger"  onclick="deleteNote()" style="display:none">Sil</button>
+        <button class="btn btn-ghost"   onclick="closeNoteModal()">İptal</button>
+        <button class="btn btn-primary" onclick="saveNote()">Notu Kaydet</button>
       </div>
     </div>
   </div>
